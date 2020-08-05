@@ -1,0 +1,21 @@
+{
+  "name": "loophole-lang",
+  "version": "0.0.0",
+  "description": "A language for my programming game, Loophole.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "yarn install",
+    "watchts": "tsc -w",
+    "test": "ava --watch --verbose",
+    "test_no_timeout": "ava --watch --verbose --serial --timeout=60m",
+    "buildpeg": "pegjs -o src/parser/parser.js src/parser/grammar.pegjs",
+    "watchpeg": "nodemon --watch src/parser -e pegjs -x yarn buildpeg",
+    "watch": "node watch.js"
+  },
+  "dependencies": {
+    "ava": "^3.6.0",
+    "pegjs": "0.10.0"
+  },
+  "author": "KodyJKing",
+  "license": "MIT"
+}

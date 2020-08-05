@@ -1,0 +1,26 @@
+- Keep the language simple initially. User's don't need to write applications in it. They just need to be able to solve puzzles.
+
+Program Structure:
+    - All code is in a function. 
+    - Everything starts in main.
+
+Scoping:
+    - There is no block level scoping. There is only global scope and local function scope.
+        - There will be no declaration keyword, an assignment will go to whichever scope it's already defined in (global or local),
+          or it will go to the local scope. 
+    - There are no closures.
+
+Data types: 
+    - functions, maps, strings, numbers, booleans
+        - member access is only possible on maps
+
+Control:
+    - if, while, for(;;)
+
+Security:
+    - Don't allow access to object members. Use maps for everything and only allow get/set.
+    - Only communicate through external api functions.
+    
+- Serializability
+    - Do not store references to external api functions, use wrappers that refer to the apis by strings.
+        - Do NOT use continuations in the wrappers. Everything must still work when the apis are replaced.
