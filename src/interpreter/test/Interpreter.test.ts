@@ -7,7 +7,7 @@ import moveFunctionsToTop from "../../preprocess/moveFunctionsToTop"
 import Interpreter from "../Interpreter"
 
 test( "interpreter", t => {
-    let source = fs.readFileSync( "src/parser/test/samplesource.loop", { encoding: "utf8" } )
+    let source = fs.readFileSync( "src/interpreter/test/source.loop", { encoding: "utf8" } )
     let ast = parser.parse( source )
 
     startDivider( "AST" )

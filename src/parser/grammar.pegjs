@@ -12,68 +12,68 @@ Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment / FunctionDeclaration / CallExpressionChain
 
 IndexedAssignment
-	= map: NonBinaryExpression __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
+	= map: Term __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
 
 MemberAssignment
-	= map: NonBinaryExpression __ "." __ property: Identifier __ "=" __ right: Expression { return node("MemberAssignment", { map, property, right } ) }
+	= map: Term __ "." __ property: Identifier __ "=" __ right: Expression { return node("MemberAssignment", { map, property, right } ) }
 
 Assignment
 	= left: Identifier __ "=" __ right: Expression { return node("Assignment", { left, right } ) }
 
-Expression "expression"
-	=  BinaryOperations / AtomicExpression
-
-BinaryOperations
-    = head: NonBinaryExpression __ tail: ( operator: BinaryOperator __ operand: NonBinaryExpression __ { return { operator, operand } } )+ 
-    { return orderOperations( { head, tail } ) }
- 
-ParenthesisExpression
-	= "(" __ expression: Expression __ ")" { return expression }
-
-NonBinaryExpression
-	= CallExpressionChain / AtomicExpression
-
-AtomicExpression
-	= Literal / Identifier / ParenthesisExpression / FunctionExpression
-
-CallExpressionChain
-	= head: AtomicExpression tail: ( __ "(" __ args: Arguments? __ ")" { return args || [] } )+ { return buildCallExpression({ head, tail }) }
-
-	Arguments
-		= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return [head].concat(tail) }
-
-FunctionExpression
-	=  "(" __ args: Arguments? __ ")" __ "{" __ statements: Body? __ "}" 
-	{ 
-		return node("FunctionExpression", { 
-			arguments: args || [],
-			body: statements || []
-		}) 
-	}
-
 FunctionDeclaration
 	= name: Identifier __ expression: FunctionExpression { return node("FunctionDeclaration", { name, expression } ) }
 
-Literal "literal"
-	= value: (Float / Integer / StringLiteral) { return node("Literal", { value } ) }
-    
-		Float
-			= text: $(Integer "." PositiveInteger ("E" ("+" / "-") Integer)?) { return parseFloat(text) }
-			
-			PositiveInteger
-				= digits: $([0-9]+) { return parseInt(digits) }
+Expression "expression"
+	=  BinaryOperations / Term
 
-		Integer
-			= digits: $("-"? [0-9])+ { return parseInt(digits) }
+	BinaryOperations
+		= head: Term __ tail: ( operator: BinaryOperator __ operand: Term __ { return { operator, operand } } )+ 
+		{ return orderOperations( { head, tail } ) }
 
-		StringLiteral
-			= '"' DoubleStringChar* '"' { return JSON.parse(text()) }
+	Term
+		= CallExpressionChain / NonCallTerm
 
-			DoubleStringChar
-				= [^\r\n\t\b\f"] / "\\" ([rn"] / "u" HexDigit HexDigit HexDigit HexDigit )
+	NonCallTerm
+		= Literal / Identifier / ParenthesisExpression / FunctionExpression
 
-					HexDigit
-						= [0-9A-Fa-f]
+		ParenthesisExpression
+			= "(" __ expression: Expression __ ")" { return expression }
+
+	CallExpressionChain
+		= head: NonCallTerm tail: ( __ "(" __ args: Arguments? __ ")" { return args || [] } )+ { return buildCallExpression({ head, tail }) }
+
+		Arguments
+			= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return [head].concat(tail) }
+
+	FunctionExpression
+		=  "(" __ args: Arguments? __ ")" __ "{" __ statements: Body? __ "}" 
+		{ 
+			return node("FunctionExpression", { 
+				arguments: args || [],
+				body: statements || []
+			}) 
+		}
+
+	Literal "literal"
+		= value: (Float / Integer / StringLiteral) { return node("Literal", { value } ) }
+		
+			Float
+				= text: $(Integer "." PositiveInteger ("E" ("+" / "-") Integer)?) { return parseFloat(text) }
+				
+				PositiveInteger
+					= digits: $([0-9]+) { return parseInt(digits) }
+
+			Integer
+				= digits: $("-"? [0-9])+ { return parseInt(digits) }
+
+			StringLiteral
+				= '"' DoubleStringChar* '"' { return JSON.parse(text()) }
+
+				DoubleStringChar
+					= [^\r\n\t\b\f"] / "\\" ([rn"] / "u" HexDigit HexDigit HexDigit HexDigit )
+
+						HexDigit
+							= [0-9A-Fa-f]
 
 Identifier
 	= text:$([a-zA-Z] [a-zA-Z0-9]*) { return node("Identifier", { name: text }) } 
