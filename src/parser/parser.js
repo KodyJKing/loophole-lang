@@ -151,11 +151,11 @@ function peg$parse(input, options) {
       peg$c7 = peg$literalExpectation("]", false),
       peg$c8 = "=",
       peg$c9 = peg$literalExpectation("=", false),
-      peg$c10 = function(map, index, rightValue) { return node("IndexAssignment", { map, index, rightValue } ) },
+      peg$c10 = function(map, index, right) { return node("IndexAssignment", { map, index, right } ) },
       peg$c11 = ".",
       peg$c12 = peg$literalExpectation(".", false),
-      peg$c13 = function(map, property, rightValue) { return node("MemberAssignment", { map, property, rightValue } ) },
-      peg$c14 = function(leftValue, rightValue) { return node("Assignment", { leftValue, rightValue } ) },
+      peg$c13 = function(map, property, right) { return node("MemberAssignment", { map, property, right } ) },
+      peg$c14 = function(left, right) { return node("Assignment", { left, right } ) },
       peg$c15 = peg$otherExpectation("expression"),
       peg$c16 = function(head, operator, operand) { return { operator, operand } },
       peg$c17 = function(head, tail) { return orderOperations( { head, tail } ) },
@@ -209,7 +209,7 @@ function peg$parse(input, options) {
       peg$c60 = peg$classExpectation([["a", "z"], ["A", "Z"]], false, false),
       peg$c61 = /^[a-zA-Z0-9]/,
       peg$c62 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"]], false, false),
-      peg$c63 = function(text) { return text },
+      peg$c63 = function(text) { return node("Identifier", { name: text }) },
       peg$c64 = "==",
       peg$c65 = peg$literalExpectation("==", false),
       peg$c66 = "**",
@@ -1990,66 +1990,7 @@ function peg$parse(input, options) {
     return s0;
   }
 
-
-      const operatorPrecedences = { 
-  		"==": 0,
-  		"+": 1, "-": 1, 
-  		"*": 2, "/": 2, 
-  		"**": 3 
-  	}
-
-  	function node( type, properties ) {
-  		return Object.assign( { type }, properties )
-  	}
-
-  	function orderOperations( operationChain ) {
-  		const nodeType = "BinaryOperations"
-  		let operands = [ operationChain.head ]
-  		let operators = []
-  		for ( let { operand, operator } of operationChain.tail ) {
-  			operands.push( operand )
-  			operators.push( operator )
-  		}
-  		let operandIndex = 0
-  		function parse( ops ) {
-  			if ( ops.length == 0 ) return operands[ operandIndex++ ]
-  			if ( ops.length == 1 ) {
-  				return node( nodeType, {
-  					operation: ops[ 0 ],
-  					left: operands[ operandIndex++ ],
-  					right: operands[ operandIndex++ ]
-  				} )
-  			}
-  			let min = ops.reduce( ( a, b ) => operatorPrecedences[ a ] < operatorPrecedences[ b ] ? a : b )
-  			let minIndex = ops.indexOf( min )
-  			return node( nodeType, {
-  				operation: min,
-  				left: parse( ops.slice( 0, minIndex ) ),
-  				right: parse( ops.slice( minIndex + 1, ops.length ) )
-  			} )
-  		}
-  		return parse( operators )
-  	}
-
-  	function buildCallExpression(callChain) {
-  		let leadCallee = callChain.head
-  		let argumentLists = callChain.tail
-  		const nodeType = "CallExpression"
-  		let i = 0
-  		let result = node(nodeType, {
-  			callee: leadCallee,
-  			arguments: argumentLists[i++]
-  		})
-  		while (i < argumentLists.length) {
-  			result = node(nodeType, {
-  				callee: result,
-  				arguments: argumentLists[i++]
-  			})
-  		}
-  		return result
-  	}
-
-
+   let { node, orderOperations, buildCallExpression } = require("./index.js") 
 
   peg$result = peg$startRuleFunction();
 

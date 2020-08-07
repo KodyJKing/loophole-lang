@@ -1,63 +1,4 @@
-{
-    const operatorPrecedences = { 
-		"==": 0,
-		"+": 1, "-": 1, 
-		"*": 2, "/": 2, 
-		"**": 3 
-	}
-
-	function node( type, properties ) {
-		return Object.assign( { type }, properties )
-	}
-
-	function orderOperations( operationChain ) {
-		const nodeType = "BinaryOperations"
-		let operands = [ operationChain.head ]
-		let operators = []
-		for ( let { operand, operator } of operationChain.tail ) {
-			operands.push( operand )
-			operators.push( operator )
-		}
-		let operandIndex = 0
-		function parse( ops ) {
-			if ( ops.length == 0 ) return operands[ operandIndex++ ]
-			if ( ops.length == 1 ) {
-				return node( nodeType, {
-					operation: ops[ 0 ],
-					left: operands[ operandIndex++ ],
-					right: operands[ operandIndex++ ]
-				} )
-			}
-			let min = ops.reduce( ( a, b ) => operatorPrecedences[ a ] < operatorPrecedences[ b ] ? a : b )
-			let minIndex = ops.indexOf( min )
-			return node( nodeType, {
-				operation: min,
-				left: parse( ops.slice( 0, minIndex ) ),
-				right: parse( ops.slice( minIndex + 1, ops.length ) )
-			} )
-		}
-		return parse( operators )
-	}
-
-	function buildCallExpression(callChain) {
-		let leadCallee = callChain.head
-		let argumentLists = callChain.tail
-		const nodeType = "CallExpression"
-		let i = 0
-		let result = node(nodeType, {
-			callee: leadCallee,
-			arguments: argumentLists[i++]
-		})
-		while (i < argumentLists.length) {
-			result = node(nodeType, {
-				callee: result,
-				arguments: argumentLists[i++]
-			})
-		}
-		return result
-	}
-
-}
+{ let { node, orderOperations, buildCallExpression } = require("./index.js") }
 
 start = Program
 
@@ -71,13 +12,13 @@ Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment / FunctionDeclaration / CallExpressionChain
 
 IndexedAssignment
-	= map: NonBinaryExpression __ "[" __ index: Expression __ "]" __ "=" __ rightValue: Expression { return node("IndexAssignment", { map, index, rightValue } ) }
+	= map: NonBinaryExpression __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
 
 MemberAssignment
-	= map: NonBinaryExpression __ "." __ property: Identifier __ "=" __ rightValue: Expression { return node("MemberAssignment", { map, property, rightValue } ) }
+	= map: NonBinaryExpression __ "." __ property: Identifier __ "=" __ right: Expression { return node("MemberAssignment", { map, property, right } ) }
 
 Assignment
-	= leftValue: Identifier __ "=" __ rightValue: Expression { return node("Assignment", { leftValue, rightValue } ) }
+	= left: Identifier __ "=" __ right: Expression { return node("Assignment", { left, right } ) }
 
 Expression "expression"
 	=  BinaryOperations / AtomicExpression
@@ -135,7 +76,7 @@ Literal "literal"
 						= [0-9A-Fa-f]
 
 Identifier
-	= text:$([a-zA-Z] [a-zA-Z0-9]*) { return text } 
+	= text:$([a-zA-Z] [a-zA-Z0-9]*) { return node("Identifier", { name: text }) } 
 
 BinaryOperator
 	= "==" / "+" / "-" / "**" / "*" / "/"

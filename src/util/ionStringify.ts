@@ -1,14 +1,20 @@
-export default function ionStringify( obj, dentPrime = "    " ) {
+export default function ionStringify( obj, indentation = 4, maxInlineLength = 60 ) {
+    let dentPrime = new Array( indentation + 1 ).join( " " )
     function isValueType( object ) { return typeof object != "object" || object === null }
+
     function inlineStringify( obj ) {
         let result: string[] = []
         function internal( obj ) {
-            if ( isValueType( obj ) ) {
-                result.push( JSON.stringify( obj ) )
-                return
-            }
+            if ( isValueType( obj ) )
+                return result.push(
+                    obj === undefined
+                        ? "undefined"
+                        : JSON.stringify( obj )
+                )
             let i = 0
             if ( Array.isArray( obj ) ) {
+                if ( obj.length == 0 )
+                    return result.push( "[]" )
                 result.push( "[ " )
                 for ( let e of obj ) {
                     if ( i++ > 0 ) result.push( "," )
@@ -16,6 +22,8 @@ export default function ionStringify( obj, dentPrime = "    " ) {
                 }
                 result.push( " ]" )
             } else {
+                if ( Object.keys( obj ).length == 0 )
+                    return result.push( "{}" )
                 result.push( "{ " )
                 for ( let k in obj ) {
                     let v = obj[ k ]
@@ -33,15 +41,15 @@ export default function ionStringify( obj, dentPrime = "    " ) {
 
     let parts: string[] = []
     function internal( obj, dent ) {
+        if ( isValueType( obj ) )
+            return parts.push(
+                obj === undefined
+                    ? "undefined"
+                    : JSON.stringify( obj )
+            )
         let str = inlineStringify( obj )
-        if ( isValueType( obj ) ) {
-            parts.push( str )
-            return
-        }
-        if ( str.length < 60 ) {
-            parts.push( str )
-            return
-        }
+        if ( str.length < maxInlineLength )
+            return parts.push( str )
         dent = dent + dentPrime
         if ( Array.isArray( obj ) ) {
             parts.push( "[]" )
@@ -58,6 +66,7 @@ export default function ionStringify( obj, dentPrime = "    " ) {
             }
         }
     }
+
     internal( obj, "" )
     return parts.join( "" )
 }
