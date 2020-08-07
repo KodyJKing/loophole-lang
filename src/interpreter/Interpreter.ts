@@ -41,8 +41,6 @@ const steppers: { [ key: string ]: Stepper } = {
         let { body } = node
         if ( step == 0 )
             context.scope = new Scope( context.scope )
-        if ( step > 0 )
-            context.stack.pop()
         if ( step < body.length )
             return new Context( body[ step ], context )
     },
@@ -52,20 +50,20 @@ const steppers: { [ key: string ]: Stepper } = {
     Assignment: context => {
         let { step, node } = context
         if ( step == 0 )
-            return new Context( node.right, context )
+            return new Context( node.right, context, "rval" )
         if ( step == 1 )
-            context.scope.set( node.left.name, context.stack.pop() )
+            context.scope.set( node.left.name, context.returns.rval )
     },
     CallExpression: context => {
         let { step, node } = context
         let { callee, args } = node
         if ( step == 0 )
-            return new Context( callee, context )
+            return new Context( callee, context, "callee" )
         if ( step == 1 )
-            return new Context( args, context )
+            return new Context( args, context, "args" )
         if ( step == 2 ) {
-            let argsVal = context.stack.pop()
-            let calleeVal = context.stack.pop()
+            let argsVal = context.returns.args
+            let calleeVal = context.returns.callee
             console.log( { argsVal, calleeVal } )
             if ( calleeVal.type != "FunctionExpression" )
                 throw new Error( "Callee is not a function." )
@@ -77,9 +75,11 @@ const steppers: { [ key: string ]: Stepper } = {
     Arguments: context => {
         let { step, node } = context
         let { values } = node
+        if ( step == 0 )
+            context.returns = []
         if ( step < values.length )
-            return new Context( values[ step ], context )
-        context.returnValue( context.stack )
+            return new Context( values[ step ], context, step )
+        context.returnValue( context.returns )
     }
 }
 
@@ -88,16 +88,20 @@ class Context {
     node: any
     parent?: Context
     scope: Scope
-    stack: any[]
-    constructor( node, parent?: Context ) {
+    returnKey?: string | number
+    returns: any
+    constructor( node, parent?: Context, returnKey?: string | number ) {
         this.step = 0
         this.node = node
         this.parent = parent
         this.scope = parent?.scope ?? new Scope()
-        this.stack = []
+        this.returnKey = returnKey
     }
     returnValue( value ) {
-        this.parent?.stack.push( value )
+        if ( this.parent && this.returnKey !== undefined ) {
+            this.parent.returns = this.parent.returns ?? {}
+            this.parent.returns[ this.returnKey ] = value
+        }
     }
 }
 
