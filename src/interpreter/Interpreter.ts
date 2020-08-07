@@ -1,98 +1,118 @@
-import { peek } from "../util/util"
-
 export default class Interpreter {
-    state?: State
+    context?: Context
     stack = [] as any[]
 
     constructor( ast ) {
-        this.state = nodeState( ast )
+        this.context = new Context( ast )
     }
 
     step() {
-        let { stack, state } = this
-
-        if ( !state ) return
+        let { stack, context } = this
+        if ( !context ) return
 
         function returnValue( value ) {
-            if ( state?.pushes )
+            if ( context?.pushes )
                 stack.push( value )
         }
 
-        const bodyStepper = ( state: State ) => {
-            let { step, node } = state
-            let { body } = node
-            if ( step < body.length )
-                return nodeState( body[ step ], state )
-        }
 
+        type Stepper = ( context: Context ) => Context | void
         const steppers: { [ key: string ]: Stepper } = {
-            Program: bodyStepper,
-            FunctionExpression: bodyStepper,
-            Literal: state => returnValue( state.node.value ),
-            Assignment: state => {
-                let { step, node } = state
+            Program: context => {
+                if ( context.step == 0 )
+                    return new Context( context.node.body, context, false )
+            },
+            Block: context => {
+                let { step, node } = context
+                let { body } = node
+                if ( step < body.length )
+                    return new Context( body[ step ], context )
+                console.log( context.scope )
+            },
+            Literal: context => returnValue( context.node.value ),
+            Identifier: context => returnValue( context.scope.get( context.node.name ) ),
+            FunctionExpression: context => returnValue( context.node ),
+            Assignment: context => {
+                let { step, node } = context
                 switch ( step ) {
-                    case 0: return nodeState( node.right, state, true )
-                    case 1: state.scope.set( node.left.name, stack.pop() )
+                    case 0: return new Context( node.right, context, true )
+                    case 1: context.scope.set( node.left.name, stack.pop() )
                 }
             },
-            CallExpression: state => {
-                console.log( "Call!" )
-                // Ignore callee for now, just print args.
+            CallExpression: context => {
+                let { step, node } = context
+                let { callee, arguments: args } = node
+
+                if ( step == 0 )
+                    return new Context( callee, context )
+
+                let argNum = step - 1
+                if ( argNum < args.length )
+                    return new Context( args[ argNum ], context )
+
+                let calleeValue = stack[ stack.length - args.length - 1 ]
+                console.log( calleeValue )
+
+                let end = stack.length
+                let start = end - args.length
+                console.log( stack.slice( start, end ) )
+
+                stack.length -= args.length + 1
             }
         }
 
-        let type = state.node.type
+        let type = context.node.type
         let stepper = steppers[ type ]
         if ( !stepper )
             throw new Error( "No stepper for type " + type )
-        let next = stepper( state )
+        let next = stepper( context )
         if ( !next ) {
-            state = state.parent
+            context = context.parent
         } else {
-            state.step++
-            state = next
+            context.step++
+            context = next
         }
 
-        this.state = state
+        this.context = context
     }
 
     run() {
-        while ( this.state )
+        while ( this.context )
             this.step()
     }
 
 }
 
-function nodeState( node, parent?, pushes = true ) {
-    let scope = parent?.scope ?? new Scope()
-    return { step: 0, node, parent, scope, pushes }
-}
-
-type Stepper = ( state: State ) => State | void
-type State = {
-    step: number,
-    node: any,
-    parent?: State,
-    scope: Scope,
+class Context {
+    step: number
+    node: any
+    parent?: Context
+    scope: Scope
     pushes: boolean
+    constructor( node, parent?: Context, pushes = true ) {
+        this.step = 0
+        this.node = node
+        this.parent = parent
+        this.scope = parent?.scope ?? new Scope()
+        this.pushes = pushes
+    }
 }
 
 class Scope {
     parent?: Scope
     values = new Map<string, any>()
     constructor( parent?: Scope ) { this.parent = parent }
-    static checkName( name ) {
+    lookupScope( name ): Scope | undefined {
         if ( typeof name != "string" )
             throw new Error( "Variable names must be strings." )
-    }
-    lookupScope( name ): Scope | undefined {
-        Scope.checkName( name )
-        if ( this.values.has( name ) ) return this
-        return this.parent?.lookupScope( name )
+        let scope = this as Scope | undefined
+        while ( scope ) {
+            if ( scope.values.has( name ) ) return scope
+            scope = scope.parent
+        }
     }
     get( name ) {
-        return this.lookupScope( name )?.get( name )
+        return this.lookupScope( name )?.values?.get( name )
     }
     set( name, value ) {
         let scope = this.lookupScope( name ) || this

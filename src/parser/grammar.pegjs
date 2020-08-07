@@ -6,7 +6,7 @@ Program
 	= body: Body { return node("Program", { body } ) }
 
 Body
-	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return [head].concat(tail) }
+	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
 
 Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment / FunctionDeclaration / CallExpressionChain
@@ -34,7 +34,7 @@ Expression "expression"
 		= CallExpressionChain / NonCallTerm
 
 	NonCallTerm
-		= Literal / Identifier / ParenthesisExpression / FunctionExpression
+		= Literal / Identifier / FunctionExpression / ParenthesisExpression
 
 		ParenthesisExpression
 			= "(" __ expression: Expression __ ")" { return expression }

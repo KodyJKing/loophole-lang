@@ -37,16 +37,17 @@ const testPairs = [
                 b = 1
             `,
         [
-            '{"type":"Program","body":[{"type":"Fun',
-            'ctionDeclaration","name":{"type":"Iden',
-            'tifier","name":"foo"},"expression":{"t',
-            'ype":"FunctionExpression","arguments":',
-            '[],"body":[{"type":"Assignment","left"',
-            ':{"type":"Identifier","name":"a"},"rig',
-            'ht":{"type":"Literal","value":10}}]}},',
-            '{"type":"Assignment","left":{"type":"I',
-            'dentifier","name":"b"},"right":{"type"',
-            ':"Literal","value":1}}]}'
+            '{"type":"Program","body":{"type":"Block"',
+            ',"body":[{"type":"FunctionDeclaration","',
+            'name":{"type":"Identifier","name":"foo"}',
+            ',"expression":{"type":"FunctionExpressio',
+            'n","arguments":[],"body":{"type":"Block"',
+            ',"body":[{"type":"Assignment","left":{"t',
+            'ype":"Identifier","name":"a"},"right":{"',
+            'type":"Literal","value":10}}]}}},{"type"',
+            ':"Assignment","left":{"type":"Identifier',
+            '","name":"b"},"right":{"type":"Literal",',
+            '"value":1}}]}}'
         ]
     ],
     [
@@ -62,21 +63,21 @@ const testPairs = [
                 foo()
             `,
         [
-            '{"type":"Program","body":[{"type":"FunctionDeclaration",',
-            '"name":{"type":"Identifier","name":"foo"},"expression":{',
-            '"type":"FunctionExpression","arguments":[],"body":[{"typ',
-            'e":"Assignment","left":{"type":"Identifier","name":"a"},',
-            '"right":{"type":"Literal","value":10}},{"type":"Function',
-            'Declaration","name":{"type":"Identifier","name":"foo"},"',
-            'expression":{"type":"FunctionExpression","arguments":[],',
-            '"body":[{"type":"Assignment","left":{"type":"Identifier"',
-            ',"name":"a"},"right":{"type":"Literal","value":2}}]}}]}}',
-            ',{"type":"Assignment","left":{"type":"Identifier","name"',
-            ':"b"},"right":{"type":"Literal","value":1}},{"type":"Ass',
-            'ignment","left":{"type":"Identifier","name":"c"},"right"',
-            ':{"type":"Literal","value":"hello world!"}},{"type":"Cal',
-            'lExpression","callee":{"type":"Identifier","name":"foo"}',
-            ',"arguments":[]}]}'
+            '{"type":"Program","body":{"type":"Block","body":[{"type":"F',
+            'unctionDeclaration","name":{"type":"Identifier","name":"foo',
+            '"},"expression":{"type":"FunctionExpression","arguments":[]',
+            ',"body":{"type":"Block","body":[{"type":"Assignment","left"',
+            ':{"type":"Identifier","name":"a"},"right":{"type":"Literal"',
+            ',"value":10}},{"type":"FunctionDeclaration","name":{"type":',
+            '"Identifier","name":"foo"},"expression":{"type":"FunctionEx',
+            'pression","arguments":[],"body":{"type":"Block","body":[{"t',
+            'ype":"Assignment","left":{"type":"Identifier","name":"a"},"',
+            'right":{"type":"Literal","value":2}}]}}}]}}},{"type":"Assig',
+            'nment","left":{"type":"Identifier","name":"b"},"right":{"ty',
+            'pe":"Literal","value":1}},{"type":"Assignment","left":{"typ',
+            'e":"Identifier","name":"c"},"right":{"type":"Literal","valu',
+            'e":"hello world!"}},{"type":"CallExpression","callee":{"typ',
+            'e":"Identifier","name":"foo"},"arguments":[]}]}}'
         ]
     ]
 ]

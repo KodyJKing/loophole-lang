@@ -4,8 +4,7 @@ export default function moveFunctionsToTop( ast ) {
     traverse( ast, {
         leave: node => {
             switch ( node.type ) {
-                case "Program":
-                case "FunctionExpression":
+                case "Block":
                     let declarations = [] as any[]
                     let body = [] as any[]
                     for ( let stmt of node.body ) {
