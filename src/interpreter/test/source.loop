@@ -1,5 +1,5 @@
 b = 42
-print = () {
-    a = b
+foo = (x) {
+    print(x)
 }
-print(1, 2, 3)
+foo("hello world!")

@@ -17,8 +17,9 @@ test( "interpreter", t => {
     moveFunctionsToTop( ast )
 
     startDivider( "Executing" )
+    let natives = { print: x => console.log( x ) }
     let rt = new Interpreter( ast )
-    rt.run()
+    rt.run( natives )
     endDivider()
 
     t.pass()
