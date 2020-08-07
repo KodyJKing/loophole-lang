@@ -44,12 +44,12 @@ export function buildCallExpression( callChain ) {
     let i = 0
     let result = node( nodeType, {
         callee: leadCallee,
-        arguments: argumentLists[ i++ ]
+        args: argumentLists[ i++ ]
     } )
     while ( i < argumentLists.length ) {
         result = node( nodeType, {
             callee: result,
-            arguments: argumentLists[ i++ ]
+            args: argumentLists[ i++ ]
         } )
     }
     return result

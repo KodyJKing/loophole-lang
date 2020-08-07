@@ -16,8 +16,10 @@ test( "interpreter", t => {
 
     moveFunctionsToTop( ast )
 
+    startDivider( "Executing" )
     let rt = new Interpreter( ast )
     rt.run()
+    endDivider()
 
     t.pass()
 } )

@@ -7,6 +7,7 @@ Program
 
 Body
 	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
+	/ __ { return node("Block", { body: [] }) }
 
 Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment / FunctionDeclaration / CallExpressionChain
@@ -40,19 +41,17 @@ Expression "expression"
 			= "(" __ expression: Expression __ ")" { return expression }
 
 	CallExpressionChain
-		= head: NonCallTerm tail: ( __ "(" __ args: Arguments? __ ")" { return args || [] } )+ { return buildCallExpression({ head, tail }) }
+		= head: NonCallTerm tail: ( __ "(" __ args: Arguments __ ")" { return args || [] } )+ { return buildCallExpression({ head, tail }) }
 
 		Arguments
-			= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return [head].concat(tail) }
+			= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return node("Arguments", { values: [head].concat(tail) } ) }
+				/ __ { return node("Arguments", { values: [] }) }
 
 	FunctionExpression
-		=  "(" __ args: Arguments? __ ")" __ "{" __ statements: Body? __ "}" 
-		{ 
-			return node("FunctionExpression", { 
-				arguments: args || [],
-				body: statements || []
-			}) 
-		}
+		=  "(" __ args: ArgumentsDeclaration? __ ")" __ "{" __ body: Body __ "}" { return node("FunctionExpression", {  args: args || [], body })  }
+
+		ArgumentsDeclaration
+			= head: Expression tail: ( __ "," __ val: Identifier { return val } )* { return [head].concat(tail) }
 
 	Literal "literal"
 		= value: (Float / Integer / StringLiteral) { return node("Literal", { value } ) }
