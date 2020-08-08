@@ -1,5 +1,7 @@
-b = 42
-foo = (x) {
+x = 10
+
+foo(x) {
     print(x)
 }
+
 foo("hello world!")

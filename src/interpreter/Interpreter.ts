@@ -25,6 +25,11 @@ export default class Interpreter {
             Literal: context => { context.returnValue( context.node.value ) },
             Identifier: context => { context.returnValue( context.scope.get( context.node.name ) ) },
             FunctionExpression: context => { context.returnValue( new Closure( context.node, context.scope ) ) },
+            FunctionDeclaration: context => {
+                let { node, scope } = context
+                let { name, expression } = node
+                scope.set( name.name, new Closure( expression, scope ) )
+            },
             Assignment: context => {
                 let { step, node } = context
                 if ( step == 0 )
@@ -45,14 +50,12 @@ export default class Interpreter {
                     if ( callee instanceof Closure ) {
                         let fnNode = callee.node
                         let fnScope = new Scope( callee.scope )
-
                         // Prepare scope with passed params.
                         for ( let i = 0; i < fnNode.args.length; i++ ) {
                             let name = fnNode.args[ i ].name
                             let value = args[ i ]
                             fnScope.setLocal( name, value )
                         }
-
                         let callCtx = Context.child( fnNode.body, context, "result" )
                         callCtx.scope = fnScope
                         return callCtx
