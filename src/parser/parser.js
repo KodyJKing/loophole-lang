@@ -2488,12 +2488,22 @@ function peg$parse(input, options) {
   		return Object.assign( { type }, properties )
   	}
 
-  	const operatorPrecedences = {
-  		"==": 0,
-  		"+": 1, "-": 1,
-  		"*": 2, "/": 2,
-  		"**": 3
+  	function buildPrecedences(groups) {
+  		let result = {} as any
+  		let p = 0
+  		for (let group of groups) {
+  			group.forEach(e => result[e] = p)
+  			p++
+  		}
+  		return result
   	}
+  	const operatorPrecedences = buildPrecedences([
+  		["==", "!="],
+  		[">", "<", ">=", "<=" ],
+  		["+", "-"],
+  		["*", "/", "%"],
+  		["**"]
+  	])
 
   	function orderOperations( operationChain ) {
   		const nodeType = "BinaryOperation"

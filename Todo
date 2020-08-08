@@ -1,0 +1,10 @@
+Parser/Preprocessor
+- Move postprocessing of nodes like BinaryOperations or CallExpressionChain to preprocessor.
+- Add a preprocess phase to add missing location information.
+- Add member expressions to parser. These need to be implemented similar to or as a part of CallExpressionChain.
+
+Interpreter
+- Implement if/for.
+- Implement break/continue.
+  Move up the context chain until the first loop is found and set it's step.
+  Refactor Stepper's so they can decide what to do with a request to break/continue.

@@ -1,9 +1,0 @@
-foo() {
-    a = 10
-    foo() {
-        a = 2
-    }
-} 
-b = 1 
-c = "hello world!"
-foo()

@@ -15,6 +15,8 @@ export default class Interpreter {
             Program: context => {
                 if ( context.step == 0 )
                     return Context.child( context.node.body, context )
+                else
+                    context.returnUndefined()
             },
             Block: context => {
                 let { step, node } = context
@@ -23,6 +25,8 @@ export default class Interpreter {
                     context.scope = new Scope( context.scope )
                 if ( step < body.length )
                     return Context.child( body[ step ], context )
+                else
+                    context.returnUndefined()
             },
             Literal: context => { context.returnValue( context.node.value ) },
             Identifier: context => { context.returnValue( context.scope.get( context.node.name ) ) },
@@ -31,13 +35,16 @@ export default class Interpreter {
                 let { node, scope } = context
                 let { name, expression } = node
                 scope.set( name.name, new Closure( expression, scope ) )
+                context.returnUndefined()
             },
             Assignment: context => {
                 let { step, node } = context
                 if ( step == 0 )
                     return Context.child( node.right, context, "rval" )
-                if ( step == 1 )
+                if ( step == 1 ) {
                     context.scope.set( node.left.name, context.returns.rval )
+                    context.returnUndefined()
+                }
             },
             CallExpression: context => {
                 let { step, node } = context
@@ -49,15 +56,14 @@ export default class Interpreter {
                         let callee = context.returns.callee
                         if ( callee instanceof Closure ) {
                             let fnNode = callee.node
-                            let fnScope = new Scope( callee.scope )
+                            let callCtx = Context.child( fnNode.body, context, "result" )
+                            callCtx.scope = new Scope( callee.scope )
                             // Prepare scope with passed params.
                             for ( let i = 0; i < fnNode.args.length; i++ ) {
                                 let name = fnNode.args[ i ].name
                                 let value = args[ i ]
-                                fnScope.setLocal( name, value )
+                                callCtx.scope.setLocal( name, value )
                             }
-                            let callCtx = Context.child( fnNode.body, context, "result" )
-                            callCtx.scope = fnScope
                             return callCtx
 
                         } else if ( callee instanceof NativeFunction ) {
@@ -80,11 +86,15 @@ export default class Interpreter {
                 context.returnValue( context.returns )
             },
             WhileStatement: context => {
-                throw new Error( "WhileStatement not implemented" )
-                // let { step, node } = context
-                // if (step == 0) return Context.child(node.text, context, "test")
-                // if (step == 1) {
-                // }
+                let { step, node, returns } = context
+                switch ( step ) {
+                    case 0: return Context.child( node.test, context, "test" )
+                    case 1:
+                        if ( !returns.test ) return context.returnUndefined()
+                        return Context.child( node.body, context )
+                    case 2:
+                        return context.jump( 0 )
+                }
             },
             BinaryOperation: context => {
                 let { step, node } = context
@@ -117,11 +127,12 @@ export default class Interpreter {
                 throw new Error( "No stepper for type " + type )
             }
             let next = stepper( context )
-            if ( !next ) {
+            if ( context.done ) {
                 context = context.parent
             } else {
                 context.step++
-                context = next
+                if ( next )
+                    context = next
             }
             this.context = context
         }
@@ -160,7 +171,7 @@ class Context {
     scope!: Scope
     returnKey?: string | number
     returns: any
-    // done = false
+    done = false
 
     private constructor( node ) {
         this.step = 0
@@ -181,13 +192,17 @@ class Context {
         return result
     }
 
-    returnNull() { this.done = true }
+    returnUndefined() { this.done = true }
     returnValue( value ) {
         this.done = true
         if ( this.parent && this.returnKey !== undefined ) {
             this.parent.returns = this.parent.returns ?? {}
             this.parent.returns[ this.returnKey ] = value
         }
+    }
+
+    jump( step ) {
+        this.step = step - 1
     }
 
 }
