@@ -1,7 +1,3 @@
-x = 10
-
-foo(x) {
-    print(x)
+while ( true ) {
+    print( "hey" )
 }
-
-foo("hello world!")

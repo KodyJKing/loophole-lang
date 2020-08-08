@@ -1,3 +1,5 @@
+import { prettyPrint, switchMap } from "../util/util"
+
 export default class Interpreter {
     context?: Context
     engineScope: Scope
@@ -39,47 +41,68 @@ export default class Interpreter {
             },
             CallExpression: context => {
                 let { step, node } = context
-                if ( step == 0 )
-                    return Context.child( node.callee, context, "callee" )
-                if ( step == 1 )
-                    return Context.child( node.args, context, "args" )
-                if ( step == 2 ) {
-                    let args = context.returns.args
-                    let callee = context.returns.callee
-                    // console.log( { argsVal, calleeVal } )
-                    if ( callee instanceof Closure ) {
-                        let fnNode = callee.node
-                        let fnScope = new Scope( callee.scope )
-                        // Prepare scope with passed params.
-                        for ( let i = 0; i < fnNode.args.length; i++ ) {
-                            let name = fnNode.args[ i ].name
-                            let value = args[ i ]
-                            fnScope.setLocal( name, value )
+                switch ( step ) {
+                    case 0: return Context.child( node.callee, context, "callee" )
+                    case 1: return Context.child( node.args, context, "args" )
+                    case 2:
+                        let args = context.returns.args
+                        let callee = context.returns.callee
+                        if ( callee instanceof Closure ) {
+                            let fnNode = callee.node
+                            let fnScope = new Scope( callee.scope )
+                            // Prepare scope with passed params.
+                            for ( let i = 0; i < fnNode.args.length; i++ ) {
+                                let name = fnNode.args[ i ].name
+                                let value = args[ i ]
+                                fnScope.setLocal( name, value )
+                            }
+                            let callCtx = Context.child( fnNode.body, context, "result" )
+                            callCtx.scope = fnScope
+                            return callCtx
+
+                        } else if ( callee instanceof NativeFunction ) {
+                            let native = natives[ callee.name ]
+                            let result = native.apply( null, args )
+                            context.returnValue( result )
+                            break
+
+                        } else {
+                            throw new Error( "Callee is not a function." )
                         }
-                        let callCtx = Context.child( fnNode.body, context, "result" )
-                        callCtx.scope = fnScope
-                        return callCtx
-                    } else if ( callee instanceof NativeFunction ) {
-                        let native = natives[ callee.name ]
-                        let result = native.apply( null, args )
-                        context.returnValue( result )
-                        context.step++ // Skip 
-                    } else {
-                        throw new Error( "Callee is not a function." )
-                    }
-                }
-                if ( step == 3 ) {
-                    context.returnValue( context.returns.result )
+                    case 3: context.returnValue( context.returns.result )
                 }
             },
             Arguments: context => {
                 let { step, node } = context
                 let { values } = node
-                if ( step == 0 )
-                    context.returns = []
-                if ( step < values.length )
-                    return Context.child( values[ step ], context, step )
+                if ( step == 0 ) context.returns = []
+                if ( step < values.length ) return Context.child( values[ step ], context, step )
                 context.returnValue( context.returns )
+            },
+            WhileStatement: context => {
+                throw new Error( "WhileStatement not implemented" )
+                // let { step, node } = context
+                // if (step == 0) return Context.child(node.text, context, "test")
+                // if (step == 1) {
+                // }
+            },
+            BinaryOperation: context => {
+                let { step, node } = context
+                if ( step == 0 ) return Context.child( node.left, context, "left" )
+                if ( step == 1 ) return Context.child( node.right, context, "right" )
+                let l = context.returns.left
+                let r = context.returns.right
+                context.returnValue(
+                    switchMap( node.operation, {
+                        "==": () => l == r,
+                        "+": () => l + r,
+                        "-": () => l - r,
+                        "*": () => l * r,
+                        "/": () => l / r,
+                        "**": () => l ** r,
+                        default: () => { throw new Error( "Unsupported binary operation: " + node.operation ) }
+                    } )
+                )
             }
         }
 
@@ -87,8 +110,12 @@ export default class Interpreter {
         if ( context ) {
             let type = context.node.type
             let stepper = steppers[ type ]
-            if ( !stepper )
+            if ( !stepper ) {
+                console.log( "\nNo stepper for type " + type )
+                prettyPrint( context.node )
+                console.log()
                 throw new Error( "No stepper for type " + type )
+            }
             let next = stepper( context )
             if ( !next ) {
                 context = context.parent
@@ -133,6 +160,7 @@ class Context {
     scope!: Scope
     returnKey?: string | number
     returns: any
+    // done = false
 
     private constructor( node ) {
         this.step = 0
@@ -153,12 +181,15 @@ class Context {
         return result
     }
 
+    returnNull() { this.done = true }
     returnValue( value ) {
+        this.done = true
         if ( this.parent && this.returnKey !== undefined ) {
             this.parent.returns = this.parent.returns ?? {}
             this.parent.returns[ this.returnKey ] = value
         }
     }
+
 }
 
 class Scope {
