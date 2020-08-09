@@ -17,3 +17,17 @@ export function traverse( object, visitor ) {
     internal( object )
 }
 traverse.stop = Symbol( "stop" )
+
+export function forChildren( object, callback ) {
+    function internal( value ) {
+        if ( isValueType( value ) )
+            return
+        if ( value.type )
+            callback( value )
+        else
+            for ( let key in value )
+                internal( value[ key ] )
+    }
+    for ( let key in object )
+        internal( object[ key ] )
+}
