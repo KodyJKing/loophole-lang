@@ -6,14 +6,12 @@
 	}
 }
 
-start = Program
+// =====================================================
 
 Program
 	= body: Block { return node("Program", { body } ) }
 
-Block
-	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
-	/ __ { return node("Block", { body: [] }) }
+// =====================================================
 
 Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment / IfStatement / WhileStatement / ForStatement / FunctionDeclaration / CallExpressionChain
@@ -42,6 +40,12 @@ ForStatement
 
 	ControlBody
 		= Statement / ("{" __  body: Block __ "}" { return body } )
+
+Block
+	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
+	/ __ { return node("Block", { body: [] }) }
+
+// =====================================================
 
 Expression "expression"
 	=  BinaryOperations / Term
@@ -99,8 +103,8 @@ Expression "expression"
 						HexDigit
 							= [0-9A-Fa-f]
 
-Identifier
-	= text:$([a-zA-Z] [a-zA-Z0-9]*) { return node("Identifier", { name: text }) }
+	Identifier
+		= text:$([a-zA-Z] [a-zA-Z0-9]*) { return node("Identifier", { name: text }) }
 
 // =====================================================
 

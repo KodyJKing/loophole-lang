@@ -1,8 +1,11 @@
-// foo( n ) { 
-//     for ( i = 0; i < n; i = i + 1 )
-//         print( i ** 2 )
-// }
-// foo( 10 )
+is10LessThan100 = 10 < 100
 
-if ( true )
-    print( "Hello world!" )
+if ( is10LessThan100 )
+    print( "Here's a bunch of squares:" )
+
+printSquares( n ) {
+    for ( i = 0; i < n; i = i + 1 )
+        print( i ** 2 )
+}
+
+printSquares( 10 )
