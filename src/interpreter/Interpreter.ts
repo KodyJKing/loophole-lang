@@ -1,4 +1,4 @@
-import { prettyPrint } from "../util/util"
+import { prettyPrint, colors, fail, warn, success } from "../util/consoleUtils"
 import { evalOperation } from "../operators"
 
 export default class Interpreter {
@@ -60,11 +60,8 @@ export default class Interpreter {
                             let callCtx = Task.child( fnNode.body, task, "result" )
                             callCtx.scope = new Scope( callee.scope )
                             // Prepare scope with passed params.
-                            for ( let i = 0; i < fnNode.args.length; i++ ) {
-                                let name = fnNode.args[ i ].name
-                                let value = args[ i ]
-                                callCtx.scope.setLocal( name, value )
-                            }
+                            for ( let i = 0; i < fnNode.args.length; i++ )
+                                callCtx.scope.setLocal( fnNode.args[ i ].name, args[ i ] )
                             return callCtx
 
                         } else if ( callee instanceof NativeFunction ) {
@@ -85,6 +82,16 @@ export default class Interpreter {
                 if ( step == 0 ) task.returns = []
                 if ( step < values.length ) return Task.child( values[ step ], task, step )
                 task.returnValue( task.returns )
+            },
+            IfStatement: task => {
+                let { step, node, returns } = task
+                switch ( step ) {
+                    case 0: return Task.child( node.test, task, "test" )
+                    case 1:
+                        if ( !returns.test ) return task.returnUndefined()
+                        return Task.child( node.body, task )
+                    case 2: task.returnUndefined()
+                }
             },
             WhileStatement: task => {
                 let { step, node, returns } = task
@@ -125,9 +132,10 @@ export default class Interpreter {
             let type = task.node.type
             let stepper = steppers[ type ]
             if ( !stepper ) {
-                console.log( "\nNo stepper for type " + type )
+                fail( "\nError: No stepper for type " + type )
+                process.stdout.write( colors.red )
                 prettyPrint( task.node )
-                console.log()
+                console.log( colors.reset )
                 throw new Error( "No stepper for type " + type )
             }
             let next = stepper( task )
@@ -150,11 +158,10 @@ export default class Interpreter {
             if ( step++ == maxSteps ) break
             this.step( nativeBindings )
         }
-        console.log(
-            this.task
-                ? "Program reached the maximum number of allowed steps"
-                : "Program finished normally."
-        )
+        if ( this.task )
+            warn( `Program reached the maximum number of allowed steps. (${ maxSteps })` )
+        else
+            success( `Program finished in ${ step - 1 } steps.` )
     }
 
 }
@@ -181,7 +188,7 @@ class Task {
     node: any
     instigator?: Task
     scope!: Scope
-    returnKey?: string | number
+    private returnKey?: string | number
     returns: any
     done = false
 

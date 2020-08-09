@@ -16,7 +16,7 @@ Block
 	/ __ { return node("Block", { body: [] }) }
 
 Statement "statement"
-	= IndexedAssignment / MemberAssignment / Assignment / WhileStatement / ForStatement / FunctionDeclaration / CallExpressionChain
+	= IndexedAssignment / MemberAssignment / Assignment / IfStatement / WhileStatement / ForStatement / FunctionDeclaration / CallExpressionChain
 
 IndexedAssignment
 	= map: Term __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
@@ -30,11 +30,18 @@ Assignment
 FunctionDeclaration
 	= name: Identifier __ expression: FunctionExpression { return node("FunctionDeclaration", { name, expression } ) }
 
+IfStatement
+	= IfKeyword  __ "(" __ test: Expression __ ")" __ body: ControlBody { return node("IfStatement", { test, body } ) }
+
 WhileStatement
-	= WhileKeyword __ "(" __ test: Expression __ ")" __ "{" __ body: Block __ "}" { return node("WhileStatement", { test, body } ) }
+	= WhileKeyword __ "(" __ test: Expression __ ")" __ body: ControlBody { return node("WhileStatement", { test, body } ) }
 
 ForStatement
-	= ForKeyword __ "(" __ init:Statement __ ";" __ test:Expression __ ";" __ update:Statement __ ")" __ "{" __  body: Block __ "}" { return node("ForStatement", { init, test, update, body } ) }
+	= ForKeyword __ "(" __ init:Statement __ ";" __ test:Expression __ ";" __ update:Statement __ ")" __ body:ControlBody 
+		{ return node("ForStatement", { init, test, update, body } ) }
+
+	ControlBody
+		= Statement / ("{" __  body: Block __ "}" { return body } )
 
 Expression "expression"
 	=  BinaryOperations / Term
@@ -98,10 +105,11 @@ Identifier
 // =====================================================
 
 BinaryOperator
-	=  "==" / "!=" / ">" / "<" / ">=" / "<=" / "+" / "-" / "*" / "/" / "%" / "**"
+	=  "==" / "!=" / ">=" / "<=" / "**" / ">" / "<" / "+" / "-" / "*" / "/" / "%"
 
 WhileKeyword = "while"
 ForKeyword = "for"
+IfKeyword = "if"
 TrueKeyword = "true"
 FalseKeyword = "false"
 NullKeyword = "null"

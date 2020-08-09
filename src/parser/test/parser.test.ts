@@ -1,6 +1,6 @@
 import test from "ava"
 import parser from "../pegjs/parser"
-import { prettyPrint, startDivider, endDivider, wrapText } from "../../util/util"
+import { prettyPrint, startDivider, endDivider, wrapText } from "../../util/consoleUtils"
 import fs from "fs"
 
 // test( "main", t => {
@@ -19,12 +19,12 @@ import fs from "fs"
 // } )
 
 test( "input output pairs", t => {
-    // for ( let [ source, expected ] of testPairs ) {
-    //     let result = parser.parse( source )
-    //     // console.log( wrapText( JSON.stringify( result ) ) )
-    //     let expectedStr = ( expected as string[] ).join( "" )
-    //     t.deepEqual( JSON.stringify( result ), expectedStr )
-    // }
+    for ( let [ source, expected ] of testPairs ) {
+        let result = parser.parse( source )
+        // console.log( wrapText( JSON.stringify( result ) ) )
+        let expectedStr = ( expected as string[] ).join( "" )
+        t.deepEqual( JSON.stringify( result ), expectedStr )
+    }
     t.pass()
 } )
 
@@ -41,13 +41,13 @@ const testPairs = [
             ',"body":[{"type":"FunctionDeclaration","',
             'name":{"type":"Identifier","name":"foo"}',
             ',"expression":{"type":"FunctionExpressio',
-            'n","arguments":[],"body":{"type":"Block"',
-            ',"body":[{"type":"Assignment","left":{"t',
-            'ype":"Identifier","name":"a"},"right":{"',
-            'type":"Literal","value":10}}]}}},{"type"',
-            ':"Assignment","left":{"type":"Identifier',
-            '","name":"b"},"right":{"type":"Literal",',
-            '"value":1}}]}}'
+            'n","args":[],"body":{"type":"Block","bod',
+            'y":[{"type":"Assignment","left":{"type":',
+            '"Identifier","name":"a"},"right":{"type"',
+            ':"Literal","value":10}}]}}},{"type":"Ass',
+            'ignment","left":{"type":"Identifier","na',
+            'me":"b"},"right":{"type":"Literal","valu',
+            'e":1}}]}}'
         ]
     ],
     [
@@ -65,19 +65,20 @@ const testPairs = [
         [
             '{"type":"Program","body":{"type":"Block","body":[{"type":"F',
             'unctionDeclaration","name":{"type":"Identifier","name":"foo',
-            '"},"expression":{"type":"FunctionExpression","arguments":[]',
-            ',"body":{"type":"Block","body":[{"type":"Assignment","left"',
-            ':{"type":"Identifier","name":"a"},"right":{"type":"Literal"',
-            ',"value":10}},{"type":"FunctionDeclaration","name":{"type":',
-            '"Identifier","name":"foo"},"expression":{"type":"FunctionEx',
-            'pression","arguments":[],"body":{"type":"Block","body":[{"t',
-            'ype":"Assignment","left":{"type":"Identifier","name":"a"},"',
-            'right":{"type":"Literal","value":2}}]}}}]}}},{"type":"Assig',
-            'nment","left":{"type":"Identifier","name":"b"},"right":{"ty',
-            'pe":"Literal","value":1}},{"type":"Assignment","left":{"typ',
-            'e":"Identifier","name":"c"},"right":{"type":"Literal","valu',
-            'e":"hello world!"}},{"type":"CallExpression","callee":{"typ',
-            'e":"Identifier","name":"foo"},"arguments":[]}]}}'
+            '"},"expression":{"type":"FunctionExpression","args":[],"bod',
+            'y":{"type":"Block","body":[{"type":"Assignment","left":{"ty',
+            'pe":"Identifier","name":"a"},"right":{"type":"Literal","val',
+            'ue":10}},{"type":"FunctionDeclaration","name":{"type":"Iden',
+            'tifier","name":"foo"},"expression":{"type":"FunctionExpress',
+            'ion","args":[],"body":{"type":"Block","body":[{"type":"Assi',
+            'gnment","left":{"type":"Identifier","name":"a"},"right":{"t',
+            'ype":"Literal","value":2}}]}}}]}}},{"type":"Assignment","le',
+            'ft":{"type":"Identifier","name":"b"},"right":{"type":"Liter',
+            'al","value":1}},{"type":"Assignment","left":{"type":"Identi',
+            'fier","name":"c"},"right":{"type":"Literal","value":"hello ',
+            'world!"}},{"type":"CallExpression","callee":{"type":"Identi',
+            'fier","name":"foo"},"args":{"type":"Arguments","values":[]}',
+            '}]}}'
         ]
     ]
 ]

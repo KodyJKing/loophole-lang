@@ -6,7 +6,6 @@ const operators = [
     [ "**" ]
 ]
 export default operators
-// console.log( operators.flat().map( op => JSON.stringify( op ) ).join( " / " ) )
 
 export function evalOperation( operator: string, leftOperand, rightOperand ) {
     let operation = operations[ operator ]
@@ -28,3 +27,11 @@ function buildPrecedenceTable( groups ) {
             result[ operator ] = p
     return result
 }
+
+function pegjsRule() {
+    let ops = operators.flat()
+    // Sort the operators from largest to shortest so we don't accidentally match part of an operator.
+    ops.sort( ( a, b ) => b.length - a.length )
+    return ops.map( op => JSON.stringify( op ) ).join( " / " )
+}
+// console.log( pegjsRule() )

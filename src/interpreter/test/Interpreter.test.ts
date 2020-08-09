@@ -1,7 +1,6 @@
 import test from "ava"
-import { prettyPrint, startDivider, endDivider, wrapText, clone } from "../../util/util"
+import { prettyPrint, startDivider, endDivider } from "../../util/consoleUtils"
 import fs from "fs"
-import ionStringify from "../../util/ionStringify"
 import Interpreter from "../Interpreter"
 import parse from "../../parser/parse"
 
@@ -16,7 +15,7 @@ test( "interpreter", t => {
     startDivider( "Program Output" )
     let natives = { print: x => console.log( x ) }
     let rt = new Interpreter( ast )
-    rt.run( natives, 4000 )
+    rt.run( natives, 10000 )
     endDivider()
 
     t.pass()
