@@ -1,7 +1,9 @@
 Parser/Preprocessor
 - Move postprocessing of nodes like BinaryOperations or CallExpressionChain to preprocessor.
+- Make ** right-associative.
 - Add a preprocess phase to add missing location information.
 - Add member expressions to parser. These need to be implemented similar to or as a part of CallExpressionChain.
+-? Write a generator that emits pegjs rules from an precedence table.
 
 Interpreter
 - Implement if/for.

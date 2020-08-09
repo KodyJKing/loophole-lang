@@ -1,62 +1,63 @@
-import { prettyPrint, switchMap } from "../util/util"
+import { prettyPrint } from "../util/util"
+import { evalOperation } from "../operators"
 
 export default class Interpreter {
-    context?: Context
+    task?: Task
     engineScope: Scope
 
     constructor( ast ) {
         this.engineScope = new Scope()
-        this.context = Context.root( ast, this.engineScope )
+        this.task = Task.root( ast, this.engineScope )
     }
 
     step( natives: NativeBindings ) {
-        type Stepper = ( context: Context ) => Context | void
+        type Stepper = ( task: Task ) => Task | void
         const steppers: { [ key: string ]: Stepper } = {
-            Program: context => {
-                if ( context.step == 0 )
-                    return Context.child( context.node.body, context )
+            Program: task => {
+                if ( task.step == 0 )
+                    return Task.child( task.node.body, task )
                 else
-                    context.returnUndefined()
+                    task.returnUndefined()
             },
-            Block: context => {
-                let { step, node } = context
+            Block: task => {
+                let { step, node } = task
                 let { body } = node
                 if ( step == 0 )
-                    context.scope = new Scope( context.scope )
+                    task.scope = new Scope( task.scope )
                 if ( step < body.length )
-                    return Context.child( body[ step ], context )
+                    return Task.child( body[ step ], task )
                 else
-                    context.returnUndefined()
+                    task.returnUndefined()
             },
-            Literal: context => { context.returnValue( context.node.value ) },
-            Identifier: context => { context.returnValue( context.scope.get( context.node.name ) ) },
-            FunctionExpression: context => { context.returnValue( new Closure( context.node, context.scope ) ) },
-            FunctionDeclaration: context => {
-                let { node, scope } = context
+            Literal: task => { task.returnValue( task.node.value ) },
+            Identifier: task => { task.returnValue( task.scope.get( task.node.name ) ) },
+            FunctionExpression: task => { task.returnValue( new Closure( task.node, task.scope ) ) },
+            FunctionDeclaration: task => {
+                let { node, scope } = task
                 let { name, expression } = node
                 scope.set( name.name, new Closure( expression, scope ) )
-                context.returnUndefined()
+                task.returnUndefined()
             },
-            Assignment: context => {
-                let { step, node } = context
+            Assignment: task => {
+                let { step, node } = task
                 if ( step == 0 )
-                    return Context.child( node.right, context, "rval" )
+                    return Task.child( node.right, task, "rval" )
                 if ( step == 1 ) {
-                    context.scope.set( node.left.name, context.returns.rval )
-                    context.returnUndefined()
+                    task.scope.set( node.left.name, task.returns.rval )
+                    task.returnUndefined()
                 }
             },
-            CallExpression: context => {
-                let { step, node } = context
+            CallExpression: task => {
+                let { step, node } = task
                 switch ( step ) {
-                    case 0: return Context.child( node.callee, context, "callee" )
-                    case 1: return Context.child( node.args, context, "args" )
+                    case 0: return Task.child( node.callee, task, "callee" )
+                    case 1: return Task.child( node.args, task, "args" )
                     case 2:
-                        let args = context.returns.args
-                        let callee = context.returns.callee
+                        let args = task.returns.args
+                        let callee = task.returns.callee
                         if ( callee instanceof Closure ) {
                             let fnNode = callee.node
-                            let callCtx = Context.child( fnNode.body, context, "result" )
+                            let callCtx = Task.child( fnNode.body, task, "result" )
                             callCtx.scope = new Scope( callee.scope )
                             // Prepare scope with passed params.
                             for ( let i = 0; i < fnNode.args.length; i++ ) {
@@ -69,80 +70,91 @@ export default class Interpreter {
                         } else if ( callee instanceof NativeFunction ) {
                             let native = natives[ callee.name ]
                             let result = native.apply( null, args )
-                            context.returnValue( result )
+                            task.returnValue( result )
                             break
 
                         } else {
-                            throw new Error( "Callee is not a function." )
+                            throw new Error( `Callee (${ callee }) is not a function.` )
                         }
-                    case 3: context.returnValue( context.returns.result )
+                    case 3: task.returnValue( task.returns.result )
                 }
             },
-            Arguments: context => {
-                let { step, node } = context
+            Arguments: task => {
+                let { step, node } = task
                 let { values } = node
-                if ( step == 0 ) context.returns = []
-                if ( step < values.length ) return Context.child( values[ step ], context, step )
-                context.returnValue( context.returns )
+                if ( step == 0 ) task.returns = []
+                if ( step < values.length ) return Task.child( values[ step ], task, step )
+                task.returnValue( task.returns )
             },
-            WhileStatement: context => {
-                let { step, node, returns } = context
+            WhileStatement: task => {
+                let { step, node, returns } = task
                 switch ( step ) {
-                    case 0: return Context.child( node.test, context, "test" )
+                    case 0: return Task.child( node.test, task, "test" )
                     case 1:
-                        if ( !returns.test ) return context.returnUndefined()
-                        return Context.child( node.body, context )
+                        if ( !returns.test ) return task.returnUndefined()
+                        return Task.child( node.body, task )
                     case 2:
-                        return context.jump( 0 )
+                        return task.jump( 0 )
                 }
             },
-            BinaryOperation: context => {
-                let { step, node } = context
-                if ( step == 0 ) return Context.child( node.left, context, "left" )
-                if ( step == 1 ) return Context.child( node.right, context, "right" )
-                let l = context.returns.left
-                let r = context.returns.right
-                context.returnValue(
-                    switchMap( node.operation, {
-                        "==": () => l == r,
-                        "+": () => l + r,
-                        "-": () => l - r,
-                        "*": () => l * r,
-                        "/": () => l / r,
-                        "**": () => l ** r,
-                        default: () => { throw new Error( "Unsupported binary operation: " + node.operation ) }
-                    } )
-                )
+            ForStatement: task => {
+                let { step, node, returns } = task
+                let { init, test, update, body } = node
+                switch ( step ) {
+                    case 0: return Task.child( init, task )
+                    case 1: return Task.child( test, task, "test" )
+                    case 2:
+                        if ( !returns.test )
+                            return task.returnUndefined()
+                        else
+                            return Task.child( body, task )
+                    case 3: return Task.child( update, task )
+                    case 4: return task.jump( 1 )
+                }
+            },
+            BinaryOperation: task => {
+                let { step, node } = task
+                if ( step == 0 ) return Task.child( node.left, task, "left" )
+                if ( step == 1 ) return Task.child( node.right, task, "right" )
+                task.returnValue( evalOperation( node.operation, task.returns.left, task.returns.right ) )
             }
         }
 
-        let { context } = this
-        if ( context ) {
-            let type = context.node.type
+        let { task } = this
+        if ( task ) {
+            let type = task.node.type
             let stepper = steppers[ type ]
             if ( !stepper ) {
                 console.log( "\nNo stepper for type " + type )
-                prettyPrint( context.node )
+                prettyPrint( task.node )
                 console.log()
                 throw new Error( "No stepper for type " + type )
             }
-            let next = stepper( context )
-            if ( context.done ) {
-                context = context.parent
+            let next = stepper( task )
+            if ( task.done ) {
+                task = task.instigator
             } else {
-                context.step++
+                task.step++
                 if ( next )
-                    context = next
+                    task = next
             }
-            this.context = context
+            this.task = task
         }
     }
 
-    run( nativeBindings: NativeBindings ) {
+    run( nativeBindings: NativeBindings, maxSteps = Infinity ) {
+        let step = 0
         for ( let name in nativeBindings )
             this.engineScope.set( name, new NativeFunction( name ) )
-        while ( this.context )
+        while ( this.task ) {
+            if ( step++ == maxSteps ) break
             this.step( nativeBindings )
+        }
+        console.log(
+            this.task
+                ? "Program reached the maximum number of allowed steps"
+                : "Program finished normally."
+        )
     }
 
 }
@@ -164,10 +176,10 @@ class Closure {
     }
 }
 
-class Context {
+class Task {
     step: number
     node: any
-    parent?: Context
+    instigator?: Task
     scope!: Scope
     returnKey?: string | number
     returns: any
@@ -178,16 +190,16 @@ class Context {
         this.node = node
     }
 
-    static child( node, parent: Context, returnKey?: string | number ) {
-        let result = new Context( node )
-        result.parent = parent
-        result.scope = parent?.scope
+    static child( node, instigator: Task, returnKey?: string | number ) {
+        let result = new Task( node )
+        result.instigator = instigator
+        result.scope = instigator?.scope
         result.returnKey = returnKey
         return result
     }
 
     static root( ast, engineScope: Scope ) {
-        let result = new Context( ast )
+        let result = new Task( ast )
         result.scope = engineScope
         return result
     }
@@ -195,9 +207,9 @@ class Context {
     returnUndefined() { this.done = true }
     returnValue( value ) {
         this.done = true
-        if ( this.parent && this.returnKey !== undefined ) {
-            this.parent.returns = this.parent.returns ?? {}
-            this.parent.returns[ this.returnKey ] = value
+        if ( this.instigator && this.returnKey !== undefined ) {
+            this.instigator.returns = this.instigator.returns ?? {}
+            this.instigator.returns[ this.returnKey ] = value
         }
     }
 
@@ -208,16 +220,16 @@ class Context {
 }
 
 class Scope {
-    parent?: Scope
+    outerScope?: Scope
     values = new Map<string, any>()
-    constructor( parent?: Scope ) { this.parent = parent }
+    constructor( parent?: Scope ) { this.outerScope = parent }
     lookupScope( name ) {
         if ( typeof name != "string" )
             throw new Error( "Variable names must be strings." )
         let scope = this as Scope | undefined
         while ( scope ) {
             if ( scope.values.has( name ) ) return scope
-            scope = scope.parent
+            scope = scope.outerScope
         }
     }
     get( name ) {

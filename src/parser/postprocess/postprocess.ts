@@ -1,6 +1,11 @@
-import { traverse } from "./traverse";
+import { traverse } from "./traverse"
 
-export default function moveFunctionsToTop( ast ) {
+export default function postprocess( ast ) {
+    ast = moveFunctionsToTop( ast )
+    return ast
+}
+
+function moveFunctionsToTop( ast ) {
     traverse( ast, {
         leave: node => {
             switch ( node.type ) {
@@ -20,4 +25,5 @@ export default function moveFunctionsToTop( ast ) {
             }
         }
     } )
+    return ast
 }

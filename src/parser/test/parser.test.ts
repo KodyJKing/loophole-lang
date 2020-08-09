@@ -1,5 +1,5 @@
 import test from "ava"
-import parser from "../parser"
+import parser from "../pegjs/parser"
 import { prettyPrint, startDivider, endDivider, wrapText } from "../../util/util"
 import fs from "fs"
 

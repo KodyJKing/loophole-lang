@@ -8,7 +8,7 @@
     "watchts": "tsc -w",
     "test": "ava --watch --verbose",
     "test_serial": "ava --watch --verbose --serial --timeout=60m",
-    "buildpeg": "pegjs -o src/parser/parser.js src/parser/grammar.pegjs",
+    "buildpeg": "pegjs -o src/parser/pegjs/parser.js src/parser/pegjs/grammar.pegjs",
     "watchpeg": "nodemon --watch src/parser -e pegjs -x yarn buildpeg",
     "watch": "node watch.js"
   },
