@@ -23,31 +23,8 @@ export default class Interpreter {
     }
 
     step() {
-        let { task } = this
-        if ( task ) {
-            let type = task.node.type
-            let handler = TaskHandlers[ type ]
-
-            if ( !handler ) {
-                fail( "\nError: No step handler for type " + type )
-                process.stdout.write( colors.red )
-                prettyPrint( task.node )
-                console.log( colors.reset )
-                throw new Error( "No step handler for type " + type )
-            }
-
-            let stepper = typeof handler == "function" ? handler : handler.step
-            let next = stepper( task, this )
-            if ( task.done ) {
-                task = task.instigator
-            } else {
-                task.step++
-                if ( next )
-                    task = next
-            }
-
-            this.task = task
-        }
+        if ( this.task )
+            this.task = this.task.stepAndGetNextTask( this )
     }
 
     run( maxSteps = Infinity ) {

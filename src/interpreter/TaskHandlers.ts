@@ -5,13 +5,13 @@ import { NativeFunction, Closure } from "."
 import Interpreter from "./Interpreter"
 
 type Stepper = ( task: Task, interpreter: Interpreter ) => Task | void
-type TaskHandler = Stepper | {
+type TaskHandler = {
     step: Stepper,
-    continue: Stepper,
-    break: Stepper
+    continue?: Stepper,
+    break?: Stepper
 }
 
-const TaskHandlers: { [ key: string ]: TaskHandler } = {
+const taskHandlers: { [ key: string ]: Stepper | TaskHandler } = {
 
     Program: task => {
         if ( task.step == 0 )
@@ -130,7 +130,7 @@ const TaskHandlers: { [ key: string ]: TaskHandler } = {
             }
         },
         continue: task => {
-            task.step = 0
+            task.jumpInto( 0 )
             return task
         },
         break: task => task.instigator
@@ -153,7 +153,7 @@ const TaskHandlers: { [ key: string ]: TaskHandler } = {
             }
         },
         continue: task => {
-            task.step = 3
+            task.jumpInto( 3 )
             return task
         },
         break: task => task.instigator
@@ -164,10 +164,8 @@ const TaskHandlers: { [ key: string ]: TaskHandler } = {
         while ( ancestorTask ) {
             let type = ancestorTask.node.type
             let handler = TaskHandlers[ type ]
-            if ( typeof handler == "object" ) {
-                let breakHandler = handler.break
-                return breakHandler( ancestorTask, interpreter )
-            }
+            if ( handler.break )
+                return handler.break( ancestorTask, interpreter )
             ancestorTask = ancestorTask.instigator
         }
     },
@@ -177,13 +175,20 @@ const TaskHandlers: { [ key: string ]: TaskHandler } = {
         while ( ancestorTask ) {
             let type = ancestorTask.node.type
             let handler = TaskHandlers[ type ]
-            if ( typeof handler == "object" ) {
-                let continueHandler = handler.continue
-                return continueHandler( ancestorTask, interpreter )
-            }
+            if ( handler.continue )
+                return handler.continue( ancestorTask, interpreter )
             ancestorTask = ancestorTask.instigator
         }
     }
+}
+
+const TaskHandlers: { [ key: string ]: TaskHandler } = {}
+for ( let key in taskHandlers ) {
+    let handler = taskHandlers[ key ]
+    if ( typeof handler == "object" )
+        TaskHandlers[ key ] = handler
+    else
+        TaskHandlers[ key ] = { step: handler }
 }
 
 export default TaskHandlers

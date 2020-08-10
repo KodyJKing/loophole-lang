@@ -1,4 +1,7 @@
 import { Scope } from "./Scope"
+import Interpreter from "./Interpreter"
+import TaskHandlers from "./TaskHandlers"
+import { fail, colors, prettyPrint } from "../util/consoleUtils"
 export class Task {
     step: number
     node: any
@@ -36,7 +39,38 @@ export class Task {
         }
     }
 
+    /** Call if jumping within tasks, otherwise call jumpInto. */
     jump( step ) {
         this.step = step - 1
+    }
+
+    /** Call if jumping from a different task, otherwise call jump. */
+    jumpInto( step ) {
+        this.step = step
+    }
+
+    stepAndGetNextTask( interpreter: Interpreter ) {
+        let type = this.node.type
+        let handler = TaskHandlers[ type ]
+
+        if ( !handler ) {
+            fail( "\nError: No step handler for type " + type )
+            process.stdout.write( colors.red )
+            prettyPrint( this.node )
+            console.log( colors.reset )
+            throw new Error( "No step handler for type " + type )
+        }
+
+        let stepper = typeof handler == "function" ? handler : handler.step
+        let next = stepper( this, interpreter )
+        if ( this.done ) {
+            return this.instigator
+        } else {
+            this.step++
+            if ( next )
+                return next
+        }
+
+        return this
     }
 }
