@@ -15,7 +15,7 @@ test( "interpreter", t => {
 
     startDivider( "Program Output" )
     let natives = { print: x => console.log( x ) }
-    let rt = new Interpreter( ast ).setNatives( natives )
+    let rt = new Interpreter( source ).setNatives( natives )
     rt.run( 10000 )
     endDivider()
 

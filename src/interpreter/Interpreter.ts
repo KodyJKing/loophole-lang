@@ -4,13 +4,15 @@ import { Scope } from "./Scope"
 import { Task } from "./Task"
 import { NativeBindings, NativeFunction } from "."
 import TaskHandlers from "./TaskHandlers"
+import parse from "../parser/parse"
 
 export default class Interpreter {
     task?: Task
     engineScope: Scope
     nativeBindings?: NativeBindings
 
-    constructor( ast ) {
+    constructor( source: string ) {
+        let ast = parse( source )
         this.engineScope = new Scope()
         this.task = Task.root( ast, this.engineScope )
     }

@@ -1,26 +1,30 @@
 export class Scope {
     outerScope?: Scope
-    values = new Map<string, any>()
+    values: { [ key: string ]: any } = {}
     constructor( parent?: Scope ) { this.outerScope = parent }
-    lookupScope( name ) {
+    private lookupScope( name ) {
         if ( typeof name != "string" )
             throw new Error( "Variable names must be strings." )
         let scope = this as Scope | undefined
         while ( scope ) {
-            if ( scope.values.has( name ) )
+            if ( scope.values[ name ] !== undefined )
                 return scope
             scope = scope.outerScope
         }
     }
     get( name ) {
-        return this.lookupScope( name )?.values?.get( name )
+        name = "." + name
+        let values = this.lookupScope( name )?.values
+        if ( values ) return values[ name ]
     }
     set( name, value ) {
         // console.log( { name, value } )
+        name = "." + name
         let scope = this.lookupScope( name ) ?? this
-        scope.values.set( name, value )
+        scope.values[ name ] = value
     }
     setLocal( name, value ) {
-        this.values.set( name, value )
+        name = "." + name
+        this.values[ name ] = value
     }
 }
