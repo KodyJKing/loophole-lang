@@ -4,14 +4,14 @@ import { Scope } from "./Scope"
 import { NativeFunction, Closure } from "."
 import Interpreter from "./Interpreter"
 
-type Stepper = ( task: Task, interpreter: Interpreter ) => Task | void
+type StepFunction = ( task: Task, interpreter: Interpreter ) => Task | void
 type TaskHandler = {
-    step: Stepper,
-    continue?: Stepper,
-    break?: Stepper
+    step: StepFunction,
+    continue?: StepFunction,
+    break?: StepFunction
 }
 
-const taskHandlers: { [ key: string ]: Stepper | TaskHandler } = {
+const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
 
     Program: task => {
         if ( task.step == 0 )
@@ -82,7 +82,6 @@ const taskHandlers: { [ key: string ]: Stepper | TaskHandler } = {
                     for ( let i = 0; i < fnNode.args.length; i++ )
                         callCtx.scope.setLocal( fnNode.args[ i ].name, args[ i ] )
                     return callCtx
-
                 } else if ( callee instanceof NativeFunction ) {
                     if ( !interpreter.nativeBindings ) throw new Error( "No native bindings provided." )
                     let native = interpreter.nativeBindings[ callee.name ]
@@ -177,6 +176,20 @@ const taskHandlers: { [ key: string ]: Stepper | TaskHandler } = {
             let handler = TaskHandlers[ type ]
             if ( handler.continue )
                 return handler.continue( ancestorTask, interpreter )
+            ancestorTask = ancestorTask.instigator
+        }
+    },
+
+    ReturnStatement: task => {
+        let { step, node } = task
+        if ( step == 0 ) return Task.child( node.result, task, "result" )
+        let ancestorTask = task as Task | undefined
+        while ( ancestorTask ) {
+            let instigatorType = ancestorTask.instigator?.node.type
+            if ( instigatorType == "CallExpression" ) {
+                ancestorTask.return( task.returns.result )
+                return ancestorTask.instigator
+            }
             ancestorTask = ancestorTask.instigator
         }
     }

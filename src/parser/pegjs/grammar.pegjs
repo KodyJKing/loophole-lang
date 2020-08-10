@@ -16,8 +16,8 @@ Program
 Statement "statement"
 	= IndexedAssignment / MemberAssignment / Assignment
 	 / IfStatement / WhileStatement / ForStatement
-	 / BreakStatement / ContinueStatement / FunctionDeclaration
-	 / CallExpressionChain
+	 / BreakStatement / ContinueStatement / ReturnStatement
+	 / FunctionDeclaration / CallExpressionChain
 
 IndexedAssignment
 	= map: Term __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
@@ -49,6 +49,9 @@ BreakStatement
 
 ContinueStatement
 	= ContinueKeyword { return node("ContinueStatement", {}) }
+
+ReturnStatement
+	= ReturnKeyword __ result:Expression { return node("ReturnStatement", { result } ) }
 
 Block
 	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
@@ -125,11 +128,14 @@ ForKeyword = "for"
 IfKeyword = "if"
 BreakKeyword = "break"
 ContinueKeyword = "continue"
+ReturnKeyword = "return"
 TrueKeyword = "true"
 FalseKeyword = "false"
 NullKeyword = "null"
 
-Keyword = WhileKeyword / ForKeyword / IfKeyword / BreakKeyword / ContinueKeyword / TrueKeyword / FalseKeyword / NullKeyword
+Keyword = WhileKeyword / ForKeyword / IfKeyword 
+	/ BreakKeyword / ContinueKeyword / ReturnKeyword 
+	/ TrueKeyword / FalseKeyword / NullKeyword
 
 // =====================================================
 

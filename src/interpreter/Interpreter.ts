@@ -17,8 +17,10 @@ export default class Interpreter {
 
     setNatives( nativeBindings: NativeBindings ) {
         this.nativeBindings = nativeBindings
-        for ( let name in nativeBindings )
-            this.engineScope.set( name, new NativeFunction( name ) )
+        for ( let name in nativeBindings ) {
+            if ( !this.engineScope.get( name ) )
+                this.engineScope.set( name, new NativeFunction( name ) )
+        }
         return this
     }
 

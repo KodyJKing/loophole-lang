@@ -49,6 +49,8 @@ export class Task {
         this.step = step
     }
 
+    /** Advances the state of the current task and possibly returns a different task to run. 
+     * Returned task can be either a sub task or the instigating task. */
     stepAndGetNextTask( interpreter: Interpreter ) {
         let type = this.node.type
         let handler = TaskHandlers[ type ]
