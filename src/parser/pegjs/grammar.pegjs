@@ -1,7 +1,7 @@
 { 
 	const { orderOperations, buildCallExpression } = require("./index.js")
 	function node( type, properties) {
-		// properties.location = location()
+		properties.location = location()
 		return Object.assign( { type }, properties )
 	}
 }
@@ -14,7 +14,10 @@ Program
 // =====================================================
 
 Statement "statement"
-	= IndexedAssignment / MemberAssignment / Assignment / IfStatement / WhileStatement / ForStatement / FunctionDeclaration / CallExpressionChain
+	= IndexedAssignment / MemberAssignment / Assignment
+	 / IfStatement / WhileStatement / ForStatement
+	 / BreakStatement / ContinueStatement / FunctionDeclaration
+	 / CallExpressionChain
 
 IndexedAssignment
 	= map: Term __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
@@ -40,6 +43,12 @@ ForStatement
 
 	ControlBody
 		= Statement / ("{" __  body: Block __ "}" { return body } )
+
+BreakStatement
+	= BreakKeyword { return node("BreakStatement", {}) }
+
+ContinueStatement
+	= ContinueKeyword { return node("ContinueStatement", {}) }
 
 Block
 	= __ head: Statement tail: (__ res: Statement { return res } )* __ { return node("Block", { body: [head].concat(tail) } ) }
@@ -114,11 +123,13 @@ BinaryOperator
 WhileKeyword = "while"
 ForKeyword = "for"
 IfKeyword = "if"
+BreakKeyword = "break"
+ContinueKeyword = "continue"
 TrueKeyword = "true"
 FalseKeyword = "false"
 NullKeyword = "null"
 
-Keyword = WhileKeyword / ForKeyword / TrueKeyword / FalseKeyword / NullKeyword
+Keyword = WhileKeyword / ForKeyword / IfKeyword / BreakKeyword / ContinueKeyword / TrueKeyword / FalseKeyword / NullKeyword
 
 // =====================================================
 

@@ -21,9 +21,10 @@ import fs from "fs"
 test( "input output pairs", t => {
     for ( let [ source, expected ] of testPairs ) {
         let result = parser.parse( source )
-        // console.log( wrapText( JSON.stringify( result ) ) )
+        let resultJSON = JSON.stringify( result, ( k, v ) => k == "location" ? undefined : v )
+        // console.log( wrapText( resultJSON ) )
         let expectedStr = ( expected as string[] ).join( "" )
-        t.deepEqual( JSON.stringify( result ), expectedStr )
+        t.deepEqual( resultJSON, expectedStr )
     }
     t.pass()
 } )

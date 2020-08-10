@@ -9,13 +9,14 @@ test( "interpreter", t => {
     let ast = parse( source )
 
     startDivider( "AST" )
-    prettyPrint( ast, 2 )
+    let strippedAST = JSON.parse( JSON.stringify( ast, ( k, v ) => k == "location" ? undefined : v ) )
+    prettyPrint( strippedAST, 2 )
     endDivider()
 
     startDivider( "Program Output" )
     let natives = { print: x => console.log( x ) }
-    let rt = new Interpreter( ast )
-    rt.run( natives, 10000 )
+    let rt = new Interpreter( ast ).setNatives( natives )
+    rt.run( 10000 )
     endDivider()
 
     t.pass()
