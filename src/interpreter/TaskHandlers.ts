@@ -59,6 +59,56 @@ const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
         }
     },
 
+    MemberAssignment: task => {
+        let { step, node } = task
+        if ( step == 0 ) return Task.child( node.left.object, task, "object" )
+        if ( step == 1 ) return Task.child( node.left.key, task, "key" )
+        if ( step == 2 ) return Task.child( node.right, task, "rval" )
+        if ( step == 3 ) {
+            let { object, key, rval } = task.returns
+            if ( object instanceof Table ) {
+                object.set( key, rval )
+            } else {
+                throw new Error( "Tried to write member of non-table object." )
+            }
+            task.exit()
+        }
+    },
+
+    MemberExpression: task => {
+        let { step, node } = task
+        if ( step == 0 ) return Task.child( node.object, task, "object" )
+        if ( step == 1 ) return Task.child( node.key, task, "key" )
+        let { object, key } = task.returns
+        if ( object instanceof Table ) {
+            task.return( object.get( key ) )
+        } else if ( typeof object == "string" ) {
+            task.return( object.charAt( key ) )
+        } else {
+            throw new Error( "Tried to read member of non-table object." )
+        }
+    },
+
+    ObjectLiteral: task => {
+        let { step, node } = task
+        let { pairs } = node
+        if ( step < pairs.length * 2 ) {
+            let index = Math.floor( step / 2 )
+            let isKey = step % 2 == 0
+            let subtask = pairs[ index ][ isKey ? "key" : "value" ]
+            return Task.child( subtask, task, step )
+        } else {
+            let result = new Table()
+            for ( let i = 0; i < pairs.length; i++ ) {
+                let key = task.returns[ i * 2 ]
+                let value = task.returns[ i * 2 + 1 ]
+                result.set( key, value )
+            }
+            task.return( result )
+        }
+
+    },
+
     BinaryOperation: task => {
         let { step, node } = task
         if ( step == 0 ) return Task.child( node.left, task, "left" )
@@ -102,38 +152,6 @@ const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
         if ( step == 0 ) task.returns = []
         if ( step < values.length ) return Task.child( values[ step ], task, step )
         task.return( task.returns )
-    },
-
-    ObjectLiteral: task => {
-        let { step, node } = task
-        let { pairs } = node
-        if ( step < pairs.length * 2 ) {
-            let index = Math.floor( step / 2 )
-            let isKey = step % 2 == 0
-            let subtask = pairs[ index ][ isKey ? "key" : "value" ]
-            return Task.child( subtask, task, step )
-        } else {
-            let result = new Table()
-            for ( let i = 0; i < pairs.length; i++ ) {
-                let key = task.returns[ i * 2 ]
-                let value = task.returns[ i * 2 + 1 ]
-                result.set( key, value )
-            }
-            task.return( result )
-        }
-
-    },
-
-    MemberExpression: task => {
-        let { step, node } = task
-        if ( step == 0 ) return Task.child( node.object, task, "object" )
-        if ( step == 1 ) return Task.child( node.key, task, "key" )
-        let { object, key } = task.returns
-        if ( object instanceof Table ) {
-            task.return( object.get( key ) )
-        } else {
-            throw new Error( "Tried to access member of non-table object." )
-        }
     },
 
     IfStatement: task => {

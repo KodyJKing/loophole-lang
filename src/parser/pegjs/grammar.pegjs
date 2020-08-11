@@ -14,13 +14,16 @@ Program
 // =====================================================
 
 Statement "statement"
-	= Assignment
+	= MemberAssignment / Assignment
 	 / IfStatement / WhileStatement / ForStatement
 	 / BreakStatement / ContinueStatement / ReturnStatement
 	 / FunctionDeclaration / MemberOrCallChain
 
 Assignment "assignment"
 	= left: Identifier __ "=" __ right: Expression { return node("Assignment", { left, right } ) }
+
+MemberAssignment "member assignment"
+	= left: MemberOrCallChain &{ return left.type == "MemberExpression" } __ "=" __ right: Expression { return node("MemberAssignment", { left, right } ) }
 
 FunctionDeclaration "function declaration"
 	= name: Identifier __ expression: FunctionExpression { return node("FunctionDeclaration", { name, expression } ) }
