@@ -5,7 +5,7 @@ import Interpreter from "../Interpreter"
 import parse from "../../parser/parse"
 
 test( "interpreter", t => {
-    let source = fs.readFileSync( "src/interpreter/test/source.loop", { encoding: "utf8" } )
+    let source = fs.readFileSync( "src/samplesource/source.loop", { encoding: "utf8" } )
     let ast = parse( source )
 
     startDivider( "AST" )

@@ -1,7 +1,7 @@
 import { Task } from "./Task"
 import { evalOperation } from "../operators"
 import { Scope } from "./Scope"
-import { NativeFunction, Closure } from "."
+import { NativeFunction, Closure, Table } from "."
 import Interpreter from "./Interpreter"
 
 type StepFunction = ( task: Task, interpreter: Interpreter ) => Task | void
@@ -88,8 +88,7 @@ const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
                     if ( !native ) throw new Error( "No native binding for " + callee.name + " provided." )
                     let result = native.apply( null, args )
                     task.return( result )
-                    break
-
+                    return
                 } else {
                     throw new Error( `Callee (${ callee }) is not a function.` )
                 }
@@ -103,6 +102,38 @@ const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
         if ( step == 0 ) task.returns = []
         if ( step < values.length ) return Task.child( values[ step ], task, step )
         task.return( task.returns )
+    },
+
+    ObjectLiteral: task => {
+        let { step, node } = task
+        let { pairs } = node
+        if ( step < pairs.length * 2 ) {
+            let index = Math.floor( step / 2 )
+            let isKey = step % 2 == 0
+            let subtask = pairs[ index ][ isKey ? "key" : "value" ]
+            return Task.child( subtask, task, step )
+        } else {
+            let result = new Table()
+            for ( let i = 0; i < pairs.length; i++ ) {
+                let key = task.returns[ i * 2 ]
+                let value = task.returns[ i * 2 + 1 ]
+                result.set( key, value )
+            }
+            task.return( result )
+        }
+
+    },
+
+    MemberExpression: task => {
+        let { step, node } = task
+        if ( step == 0 ) return Task.child( node.object, task, "object" )
+        if ( step == 1 ) return Task.child( node.key, task, "key" )
+        let { object, key } = task.returns
+        if ( object instanceof Table ) {
+            task.return( object.get( key ) )
+        } else {
+            throw new Error( "Tried to access member of non-table object." )
+        }
     },
 
     IfStatement: task => {
@@ -193,6 +224,7 @@ const taskHandlers: { [ key: string ]: StepFunction | TaskHandler } = {
             ancestorTask = ancestorTask.instigator
         }
     }
+
 }
 
 const TaskHandlers: { [ key: string ]: TaskHandler } = {}

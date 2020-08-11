@@ -1,7 +1,7 @@
 { 
-	const { orderOperations, buildCallExpression } = require("./index.js")
-	function node( type, properties) {
-		properties.location = location()
+	const { orderOperations, buildMemberCallExpression } = require("./index.js")
+	function node( type, properties, addLocation = true) {
+		// if (addLocation) properties.location = location()
 		return Object.assign( { type }, properties )
 	}
 }
@@ -14,43 +14,37 @@ Program
 // =====================================================
 
 Statement "statement"
-	= IndexedAssignment / MemberAssignment / Assignment
+	= Assignment
 	 / IfStatement / WhileStatement / ForStatement
 	 / BreakStatement / ContinueStatement / ReturnStatement
-	 / FunctionDeclaration / CallExpressionChain
+	 / FunctionDeclaration / MemberOrCallChain
 
-IndexedAssignment
-	= map: Term __ "[" __ index: Expression __ "]" __ "=" __ right: Expression { return node("IndexAssignment", { map, index, right } ) }
-
-MemberAssignment
-	= map: Term __ "." __ property: Identifier __ "=" __ right: Expression { return node("MemberAssignment", { map, property, right } ) }
-
-Assignment
+Assignment "assignment"
 	= left: Identifier __ "=" __ right: Expression { return node("Assignment", { left, right } ) }
 
-FunctionDeclaration
+FunctionDeclaration "function declaration"
 	= name: Identifier __ expression: FunctionExpression { return node("FunctionDeclaration", { name, expression } ) }
 
-IfStatement
+IfStatement "if"
 	= IfKeyword  __ "(" __ test: Expression __ ")" __ body: ControlBody { return node("IfStatement", { test, body } ) }
 
-WhileStatement
+WhileStatement "while"
 	= WhileKeyword __ "(" __ test: Expression __ ")" __ body: ControlBody { return node("WhileStatement", { test, body } ) }
 
-ForStatement
+ForStatement "for"
 	= ForKeyword __ "(" __ init:Statement __ ";" __ test:Expression __ ";" __ update:Statement __ ")" __ body:ControlBody 
 		{ return node("ForStatement", { init, test, update, body } ) }
 
 	ControlBody
 		= Statement / ("{" __  body: Block __ "}" { return body } )
 
-BreakStatement
+BreakStatement "break"
 	= BreakKeyword { return node("BreakStatement", {}) }
 
-ContinueStatement
+ContinueStatement "continue"
 	= ContinueKeyword { return node("ContinueStatement", {}) }
 
-ReturnStatement
+ReturnStatement "return"
 	= ReturnKeyword __ result:Expression { return node("ReturnStatement", { result } ) }
 
 Block
@@ -60,33 +54,46 @@ Block
 // =====================================================
 
 Expression "expression"
-	=  BinaryOperations / Term
+	=  BinaryOperationTree / Term
 
-	BinaryOperations
+	BinaryOperationTree "binary operation"
 		= head: Term __ tail: ( operator: BinaryOperator __ operand: Term __ { return { operator, operand } } )+ 
 		{ return orderOperations( { head, tail } ) }
 
 	Term
-		= CallExpressionChain / NonCallTerm
+		= MemberOrCallChain / PrimaryTerm
 
-	NonCallTerm
-		= Literal / Identifier / FunctionExpression / ParenthesisExpression
+	MemberOrCallChain
+		= head: PrimaryTerm tail: ( __ operator:(CallOperator / MemberOperator) { return operator } )+ 
+			{ return buildMemberCallExpression( { head, tail } ) }
 
-		ParenthesisExpression
-			= "(" __ expression: Expression __ ")" { return expression }
+		CallOperator "call"
+			= "(" __ args: Arguments __ ")" { return node("CallExpression", { args } ) }
 
-	CallExpressionChain
-		= head: NonCallTerm tail: ( __ "(" __ args: Arguments __ ")" { return args || [] } )+ { return buildCallExpression({ head, tail }) }
+			Arguments "arguments"
+				= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return node("Arguments", { values: [head].concat(tail) } ) }
+					/ __ { return node("Arguments", { values: [] }) }
+		
+		MemberOperator "member"
+			= "[" __ key: Expression __ "]" { return node("MemberExpression", { key } ) }
+				/ "." key: PropertyLiteral { return node("MemberExpression", { key } ) }
 
-		Arguments
-			= head: Expression tail: ( __ "," __ val: Expression { return val } )* { return node("Arguments", { values: [head].concat(tail) } ) }
-				/ __ { return node("Arguments", { values: [] }) }
+	PrimaryTerm
+		= Literal / Identifier / FunctionExpression / ObjectLiteral / ( "(" __ expression: Expression __ ")" { return expression } )
 
-	FunctionExpression
-		=  "(" __ args: ArgumentsDeclaration? __ ")" __ "{" __ body: Block __ "}" { return node("FunctionExpression", {  args: args || [], body })  }
+	FunctionExpression "function"
+		=  "(" __ args: ArgumentsDeclaration? __ ")" __ "{" __ body: Block __ "}" 
+			{ return node("FunctionExpression", {  args: args || [], body })  }
 
-		ArgumentsDeclaration
+		ArgumentsDeclaration "parameters"
 			= head: Expression tail: ( __ "," __ val: Identifier { return val } )* { return [head].concat(tail) }
+
+	ObjectLiteral "object"
+		= "{" pairs: ( __ key: (Literal / PropertyLiteral) __ ":" __ value: Expression { return { key, value } } )* __ "}" 
+			{ return node("ObjectLiteral", { pairs } ) }
+
+	PropertyLiteral "property"
+		= id: Identifier { return node("Literal", { value: id.name } ) }
 
 	Literal "literal"
 		= value: (Float / Integer / Boolean / String) { return node("Literal", { value } ) }
@@ -115,8 +122,8 @@ Expression "expression"
 						HexDigit
 							= [0-9A-Fa-f]
 
-	Identifier
-		= text:$([a-zA-Z] [a-zA-Z0-9]*) { return node("Identifier", { name: text }) }
+	Identifier "identifier"
+		= text:$(IdentifierStart IdentifierPart*) { return node("Identifier", { name: text }) }
 
 // =====================================================
 
@@ -139,14 +146,20 @@ Keyword = WhileKeyword / ForKeyword / IfKeyword
 
 // =====================================================
 
-Newline
+IdentifierStart
+	= [a-zA-Z]
+
+IdentifierPart
+	= [a-zA-Z0-9]
+
+Newline "newline"
 	= "\n" / "\r\n" / "\r"
 
-WhiteSpace
+WhiteSpace "whitespace"
 	= "\t" / " "
     
-Comment = 
-	LineComment	/ MultiLineComment
+Comment "comment"
+	=  LineComment	/ MultiLineComment
 
 	LineComment
 		=  "//" (!Newline .)*
@@ -154,10 +167,10 @@ Comment =
 	MultiLineComment
 		= "/*" (!"*/" .)* "*/"
 
-__
+__ "whitespace"
 	= (WhiteSpace /  Newline / Comment)*
 
-_
+_ "whitespace"
 	= WhiteSpace*
 
 EOL

@@ -1,7 +1,8 @@
 import ionStringify from "./ionStringify"
 
 export function prettyPrint( obj, indentation = 4 ) {
-    console.log( ionStringify( obj, indentation ).replace( /"/g, "" ) )
+    // console.log( ionStringify( obj, indentation ).replace( /"/g, "" ) )
+    console.log( ionStringify( obj, indentation ) )
 }
 
 export function startDivider( label?) {

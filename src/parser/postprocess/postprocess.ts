@@ -37,7 +37,7 @@ function computeMissingLocations( ast ) {
                     locations.push( child.location.end )
                 }
             } )
-            if ( locations.length == 0 ) return console.log( "no child locations!!!" )
+            if ( locations.length == 0 ) return //console.log( "no child locations!!!" )
             let start = locations.reduce( ( a, b ) => b.offset < a.offset ? b : a )
             let end = locations.reduce( ( a, b ) => b.offset > a.offset ? b : a )
             node.location = { start, end }

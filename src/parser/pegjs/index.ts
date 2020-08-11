@@ -2,8 +2,12 @@ import { operatorPrecedences } from "../../operators"
 
 function node( type, properties ) { return Object.assign( { type }, properties ) }
 
-export function buildCallExpression( callChain ) {
-    return callChain.tail.reduce( ( callee, args ) => node( "CallExpression", { callee, args } ), callChain.head )
+const typeToProperty = { CallExpression: "callee", MemberExpression: "object" }
+export function buildMemberCallExpression( chain ) {
+    return chain.tail.reduce( ( left, right ) => {
+        right[ typeToProperty[ right.type ] ] = left
+        return right
+    }, chain.head )
 }
 
 export function orderOperations( operationChain ) {

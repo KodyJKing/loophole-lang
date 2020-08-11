@@ -17,10 +17,13 @@
 //     print( i * i )
 // }
 
-foo( x ) {
-    if ( x > 20 )
-        return x * 10
-    return x
-}
+// foo( x ) {
+//     if ( x > 20 )
+//         return x * 10
+//     return x
+// }
 
-print( foo( 10 ) )
+// a = {}
+// for ( i = 0; i < 10; i = i + 1 )
+//     a[ i ] = i
+// print( i )
