@@ -6,12 +6,17 @@ import { NativeBindings, NativeFunction } from "."
 import TaskHandlers from "./TaskHandlers"
 import parse from "../parser/parse"
 
+type Location = { start: LocationPart, end: LocationPart }
+type LocationPart = { offset: number, column: number, row: number }
+
 export default class Interpreter {
     task?: Task
     engineScope: Scope
     nativeBindings?: NativeBindings
+    source?: string
 
     constructor( source: string ) {
+        this.source = source
         let ast = parse( source )
         this.engineScope = new Scope()
         this.task = Task.root( ast, this.engineScope )
@@ -36,11 +41,16 @@ export default class Interpreter {
         while ( this.task ) {
             if ( step++ == maxSteps ) break
             this.step()
+            // console.log(this.location)
         }
         if ( this.task )
             warn( `Program reached the maximum number of allowed steps. (${ maxSteps })` )
         else
             success( `Program finished in ${ step - 1 } steps.` )
+    }
+
+    get location(): Location | undefined {
+        return this.task?.node?.location
     }
 
 }

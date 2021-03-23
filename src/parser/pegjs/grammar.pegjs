@@ -1,7 +1,7 @@
 { 
 	const { orderOperations, buildMemberCallExpression } = require("./index.js")
 	function node( type, properties, addLocation = true) {
-		// if (addLocation) properties.location = location()
+		if (addLocation) properties.location = location()
 		return Object.assign( { type }, properties )
 	}
 }

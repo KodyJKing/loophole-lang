@@ -7,6 +7,7 @@ import parse from "../../parser/parse"
 test( "interpreter", t => {
     let source = fs.readFileSync( "src/samplesource/source.loop", { encoding: "utf8" } )
     let ast = parse( source )
+    prettyPrint(ast)
 
     startDivider( "AST" )
     let strippedAST = JSON.parse( JSON.stringify( ast, ( k, v ) => k == "location" ? undefined : v ) )

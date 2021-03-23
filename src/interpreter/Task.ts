@@ -63,8 +63,7 @@ export class Task {
             throw new Error( "No step handler for type " + type )
         }
 
-        let stepper = typeof handler == "function" ? handler : handler.step
-        let next = stepper( this, interpreter )
+        let next = handler.step( this, interpreter )
         if ( this.done ) {
             return this.instigator
         } else {
